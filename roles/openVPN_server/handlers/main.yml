@@ -1,0 +1,10 @@
+---
+# handlers file for openvpn
+
+- name: restart openvpn
+  service:
+#    name: "{{ openvpn_service }}"
+    name: openvpn@server
+    state: restarted
+  when:
+    - not ansible_check_mode
