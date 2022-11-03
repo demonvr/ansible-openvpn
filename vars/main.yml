@@ -1,0 +1,61 @@
+---
+
+# vars file for openvpn
+
+openvpn_vars:
+  key_country: "Russia"
+  key_province: "Penza District"
+  key_city: "Penza"
+  key_org: "Certificate Company"
+  key_email: "example@example.com"
+  key_ou: "Orgname"
+
+#openvpn_client_server:
+
+# The packages differ for "server" and "client".
+openvpn_packages:
+  vpn_server:
+    - openvpn
+    - easy-rsa
+  vpn_clients:
+    - openvpn
+
+_openvpn_easyrsa_path:
+  default: /usr/share/easy-rsa/3
+  Debian: /usr/share/easy-rsa
+
+openvpn_easyrsa_path: "{{ _openvpn_easyrsa_path[ansible_os_family] | default(_openvpn_easyrsa_path['default'] ) }}"
+
+_openvpn_group:
+  default: nobody
+  Debian: nogroup
+  RedHat: openvpn
+
+_openvpn_configuration_directory:
+  vpn_server:
+    default: /etc/openvpn/server
+    Debian: /etc/openvpn
+    RedHat-7: /etc/openvpn
+  vpn_clients:
+    default: /etc/openvpn/client
+    Debian: /etc/openvpn
+    RedHat-7: /etc/openvpn
+
+openvpn_configuration_directory: "{{ _openvpn_configuration_directory[group_names|join(' ')][ansible_os_family ~ '-' ~ ansible_distribution_major_version] | default(_openvpn_configuration_directory[group_names|join(' ')][ansible_os_family] | default(_openvpn_configuration_directory[group_names|join(' ')]['default'] )) }}"
+
+openvpn_group: "{{ _openvpn_group[ansible_os_family] | default(_openvpn_group['default'] ) }}"
+
+_openvpn_service:
+  vpn_server:
+    default: openvpn@server
+    RedHat-7: openvpn@server
+    RedHat: openvpn-server@server
+    Ubuntu: openvpn
+  vpn_clients:
+    default: openvpn@client
+    RedHat-7: openvpn@client
+    RedHat: openvpn-client@client
+    Ubuntu: openvpn
+
+openvpn_service: "{{ _openvpn_service[group_names|join(' ')][ansible_os_family ~ '-' ~ ansible_distribution_major_version] | default(_openvpn_service[group_names|join(' ')][ansible_os_family] | default(_openvpn_service[group_names|join(' ')]['default'] )) }}"
+
