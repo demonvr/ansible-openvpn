@@ -1,0 +1,58 @@
+---
+
+- name: Assert vars and install openvpn packages
+  hosts: all
+  become: true
+  vars_files:
+    - vars/main.yml
+  tasks:
+    - name: Display Variable
+      debug: msg="{{ group_names|join(" ") }}"
+
+#    - name: Import assert.yml
+#      ansible.builtin.import_tasks: tasks/assert.yml
+#      run_once: yes
+#      delegate_to: localhost
+
+    - name: Install openvpn packages
+      ansible.builtin.package:
+        name: "{{ item }}"
+        state: present
+      vars:
+        - group_name: "{{ group_names|join(' ') }}"
+      with_items: "{{ openvpn_packages[group_name] }}"
+
+
+- name: Setup openvpn server
+  hosts: vpn_server
+  vars_files:
+    - vars/main.yml
+
+  roles:
+    - OpenVPN_server
+
+
+
+
+#
+#- name: Setup openvpn server
+#  ansible.builtin.import_role:
+#    name: openVPN_server
+#  when:
+#    - openvpn_role == "server"
+#
+#- name: Start and enable openvpn
+#  ansible.builtin.service:
+#    name: "{{ openvpn_service }}"
+#    state: started
+#    enabled: yes
+
+
+
+#
+#  handlers:
+#    - name: restart openvpn
+#      service:
+#        #    name: "{{ openvpn_service }}"
+#        name: openvpn@server
+#        state: restarted
