@@ -9,11 +9,6 @@
     - name: Display Variable
       debug: msg="{{ group_names|join(" ") }}"
 
-#    - name: Import assert.yml
-#      ansible.builtin.import_tasks: tasks/assert.yml
-#      run_once: yes
-#      delegate_to: localhost
-
     - name: Install openvpn packages
       ansible.builtin.package:
         name: "{{ item }}"
@@ -30,29 +25,3 @@
 
   roles:
     - OpenVPN_server
-
-
-
-
-#
-#- name: Setup openvpn server
-#  ansible.builtin.import_role:
-#    name: openVPN_server
-#  when:
-#    - openvpn_role == "server"
-#
-#- name: Start and enable openvpn
-#  ansible.builtin.service:
-#    name: "{{ openvpn_service }}"
-#    state: started
-#    enabled: yes
-
-
-
-#
-#  handlers:
-#    - name: restart openvpn
-#      service:
-#        #    name: "{{ openvpn_service }}"
-#        name: openvpn@server
-#        state: restarted
