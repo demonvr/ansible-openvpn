@@ -1,0 +1,84 @@
+---
+
+- name: Ensure /etc/openvpn/client exists
+  ansible.builtin.file:
+    path: /etc/openvpn/client/
+    state: directory
+    owner: root
+    group: "{{ openvpn_group }}"
+    mode: "0750"
+
+- name: Easyrsa build-client-full client nopass
+  ansible.builtin.command:
+    cmd: "{{ openvpn_easyrsa_path }}/easyrsa build-client-full {{ hostvars[vpn_client].client_name }} nopass"
+    chdir: /etc/openvpn/easy-rsa
+    creates: /etc/openvpn/easy-rsa/pki/issued/{{ hostvars[vpn_client].client_name }}.crt
+
+- name: Copy certificates and keys from the server to the client folder
+  ansible.builtin.copy:
+    src: /etc/openvpn/easy-rsa/pki/{{ item }}
+    dest: /etc/openvpn/client/{{ item | basename }}
+    mode: "0640"
+    remote_src: yes
+  loop:
+    - ca.crt
+    - issued/{{ hostvars[vpn_client].client_name }}.crt
+    - private/{{ hostvars[vpn_client].client_name }}.key
+    - ta.key
+
+- name: Read ca.crt
+  no_log: true
+  command: cat /etc/openvpn/ca.crt
+  register: file_ca
+
+- name: Read ta.key
+  no_log: true
+  command: cat /etc/openvpn/ta.key
+  register: file_static
+
+- name: Read client.crt
+  no_log: true
+  command: cat /etc/openvpn/client/{{ hostvars[vpn_client].client_name }}.crt
+  register: file_client_public
+
+- name: Read client.key
+  no_log: true
+  command: cat /etc/openvpn/client/{{ hostvars[vpn_client].client_name }}.key
+  register: file_client_private
+
+- name: Read client.conf
+  command: cat {{ openvpn_configuration_directory }}/client.conf
+  register: file_client_conf
+
+- name: Remove ovpn file file
+  ansible.builtin.file:
+    path: /etc/openvpn/client/{{ hostvars[vpn_client].client_name }}.ovpn
+    state: absent
+
+- name: Create ovpn file
+  file:
+    path: /etc/openvpn/client/{{ hostvars[vpn_client].client_name }}.ovpn
+    state: touch
+    owner: root
+    group: "{{ openvpn_group }}"
+    mode: "0750"
+
+- name: Update client ovpn file
+  no_log: true
+  lineinfile:
+    dest: "/etc/openvpn/client/{{ hostvars[vpn_client].client_name }}.ovpn"
+    line: "{{ item.line }}"
+  with_items:
+    - {line: '{{ file_client_conf.stdout }}'}
+    - {line: '<ca>'}
+    - {line: '{{ file_ca.stdout }}'}
+    - {line: '</ca>'}
+    - {line: '<cert>'}
+    - {line: '{{ file_client_public.stdout }}'}
+    - {line: '</cert>'}
+    - {line: '<key>'}
+    - {line: '{{ file_client_private.stdout }}'}
+    - {line: '</key>'}
+    - {line: '<tls-auth>'}
+    - {line: '{{ file_static.stdout }}'}
+    - {line: '</tls-auth>'}

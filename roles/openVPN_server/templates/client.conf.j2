@@ -1,0 +1,11 @@
+{{ ansible_managed | comment }}
+
+client
+nobind
+dev tun
+remote-cert-tls server
+key-direction 1
+redirect-gateway def1
+
+remote {{ groups['vpn_server'][0] }} 1194 udp
+

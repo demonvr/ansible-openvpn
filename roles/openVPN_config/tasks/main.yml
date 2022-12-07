@@ -1,0 +1,27 @@
+---
+
+- name: Configuration IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_set: yes
+    state: present
+    reload: yes
+    ignoreerrors: true
+  failed_when: false
+
+- name: Create IPTables NAT Chain
+  iptables:
+    table: nat
+    chain: POSTROUTING
+    jump: MASQUERADE
+    out_interface: eth0
+    protocol: all
+    source: '10.8.0.0/8'
+
+- name: Customize ufw forwarding policy
+  become: true
+  lineinfile:
+    line: "DEFAULT_FORWARD_POLICY=\"ACCEPT\""
+    path: "/etc/default/ufw"
+    regexp: "^DEFAULT_FORWARD_POLICY=\"DROP\""

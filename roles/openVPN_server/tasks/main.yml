@@ -45,10 +45,10 @@
     chdir: /etc/openvpn/easy-rsa
     creates: /etc/openvpn/easy-rsa/pki/crl.pem
 
-- name: Openvpn --genkey --secret /etc/openvpn/easy-rsa/pki/static.key
+- name: Openvpn --genkey --secret /etc/openvpn/easy-rsa/pki/ta.key
   ansible.builtin.command:
-    cmd: openvpn --genkey --secret /etc/openvpn/easy-rsa/pki/static.key
-    creates: /etc/openvpn/easy-rsa/pki/static.key
+    cmd: openvpn --genkey --secret /etc/openvpn/easy-rsa/pki/ta.key
+    creates: /etc/openvpn/easy-rsa/pki/ta.key
 
 - name: Copy files to /etc/openvpn/server
   ansible.builtin.copy:
@@ -59,7 +59,7 @@
   loop:
     - ca.crt
     - dh.pem
-    - static.key
+    - ta.key
     - issued/server.crt
     - private/server.key
     - private/ca.key
@@ -72,7 +72,7 @@
     remote_src: yes
   loop:
     - ca.crt
-    - static.key
+    - ta.key
 
 - name: Place server.conf
   ansible.builtin.template:
@@ -84,11 +84,26 @@
   notify:
     - restart openvpn
 
+- name: Place client.conf
+  ansible.builtin.template:
+    src: client.conf.j2
+    dest: "{{ openvpn_configuration_directory }}/client.conf"
+    owner: root
+    group: "{{ openvpn_group }}"
+    mode: "0640"
+  notify:
+    - restart openvpn
 
+- name: Copy certificates to the client folder and create ovpn file
+  include_tasks: inner.yml
+  with_items: "{{ groups['vpn_clients'] }}"
+  loop_control:
+    loop_var: vpn_client
 
-#- name: Restart openvpn
-#  ansible.builtin.service:
-#    name: "{{ openvpn_service }}"
-#    state: restarted
-#  when:
-#    - not ansible_check_mode
+- name: Fetch ovpn file
+  fetch:
+    src: "/etc/openvpn/client/{{ hostvars[item].client_name }}.ovpn"
+    dest: "{{ destination_key }}/"
+    flat: yes
+  with_items:
+    - "{{ groups['vpn_clients'] }}"

@@ -7,6 +7,7 @@ ca /etc/openvpn/server/ca.crt
 cert /etc/openvpn/server/server.crt
 key /etc/openvpn/server/server.key
 dh /etc/openvpn/server/dh.pem
+tls-auth /etc/openvpn/server/ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt
@@ -17,10 +18,11 @@ keepalive 10 120
 # tls-crypt /etc/openvpn/server/myvpn.tlsauth 0
 cipher AES-256-CBC
 user nobody
-group {{ openvpn_group }}
+group nogroup
 persist-key
 persist-tun
 status openvpn-status.log
 verb 3
 explicit-exit-notify 1
 remote-cert-eku "TLS Web Client Authentication"
+log /var/log/openvpn.log
