@@ -6,22 +6,43 @@
   vars_files:
     - vars/main.yml
   tasks:
+    - name: Debug client names
+      debug:
+        msg: "{{ inventory_hostname }}"
+
     - name: Display Variable
-      debug: msg="{{ group_names|join(" ") }}"
+      debug: msg="{{ groups['vpn_server'][0] }}"
+
+    - name: Display Variable vpn_clients
+      debug: msg='{{ hostvars[groups["vpn_clients"][0]].client_name }}'
+
+    - name: Update apt packages
+      ansible.builtin.package:
+        upgrade: yes
+        update_cache: yes
 
     - name: Install openvpn packages
+      become_user: root
       ansible.builtin.package:
         name: "{{ item }}"
         state: present
       vars:
-        - group_name: "{{ group_names|join(' ') }}"
+        - group_name: vpn_server
       with_items: "{{ openvpn_packages[group_name] }}"
-
 
 - name: Setup openvpn server
   hosts: vpn_server
+  become: true
   vars_files:
     - vars/main.yml
-
   roles:
-    - OpenVPN_server
+    - openVPN_server
+
+- name: Configuration iptables
+  hosts: vpn_server
+  become: true
+  roles:
+    - openVPN_config
+
+
+
